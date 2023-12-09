@@ -7,13 +7,59 @@ int* matRes = NULL;
 int* matSol = NULL;
 
 void multiply() {
-    //TODO
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < K; j++) {
+            matRes[i * K + j] = 0;
+            for (int k = 0; k < N; k++) {
+                matRes[i * K + j] += mat1[i * N + k] * mat2[k * K + j];
+            }
+        }
+    }
 }
 
-void multiplyWithThreads(int nThreads){
-    //TODO
+
+int startRow, endRow;
+
+void* threadMultiply(void* arg) {
+    int* range = (int*)arg;
+    int myStart = range[0];
+    int myEnd = range[1];
+    for (int i = myStart; i < myEnd; i++) {
+        for (int j = 0; j < K; j++) {
+            matRes[i * K + j] = 0;
+            for (int k = 0; k < N; k++) {
+                matRes[i * K + j] += mat1[i * N + k] * mat2[k * K + j];
+            }
+        }
+    }
+    return NULL;
+}
+
+
+void multiplyWithThreads(int nThreads) {
+    pthread_t threads[nThreads];
+    int rowsPerThread = M / nThreads;
+    int remainder = M % nThreads;
+
+    // Array to hold start and end rows for each thread
+    int threadData[nThreads][2];
+
+    for (int i = 0; i < nThreads; i++) {
+        threadData[i][0] = i * rowsPerThread; // start row
+        threadData[i][1] = (i != nThreads - 1) ? (threadData[i][0] + rowsPerThread) : (threadData[i][0] + rowsPerThread + remainder); // end row
+
+        pthread_create(&threads[i], NULL, threadMultiply, (void*)threadData[i]);
+    }
+
+    for (int i = 0; i < nThreads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
     printMats();
 }
+
+
+
 
 //--- DO NOT MODIFY BELOW HERE ---
 int main(int argc, char* argv[])
